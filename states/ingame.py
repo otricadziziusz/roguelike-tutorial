@@ -122,7 +122,9 @@ class PickLocation(GameMapState[Tuple[int, int]]):
         super().on_draw(console)
         style: Any = {"fg": (255, 255, 255), "bg": (0, 0, 0)}
         console.print(0, 0, self.desc, **style)
-        cam_x, cam_y = self.model.active_map.get_camera_pos(console)
+        cam_x, cam_y = self.model.active_map.camera.get_left_top_pos(
+            (console.width, console.height)
+        )
         x = self.cursor_xy[0] - cam_x
         y = self.cursor_xy[1] - cam_y
         if 0 <= x < console.width and 0 <= y < console.height:

@@ -26,6 +26,49 @@ tile_dt = np.dtype(
 )
 
 
+class Camera(NamedTuple):
+    """An object for tracking the camera position and for screen/world conversions.
+
+    `x` and `y` are the camera center position.
+    """
+
+    x: int
+    y: int
+
+    def get_left_top_pos(self, screen_shape: Tuple[int, int]) -> Tuple[int, int]:
+        """Return the (left, top) position of the camera for a screen of this size."""
+        return self.x - screen_shape[0] // 2, self.y - screen_shape[1] // 2
+
+    def get_views(
+        self, world_shape: Tuple[int, int], screen_shape: Tuple[int, int]
+    ) -> Tuple[Tuple[slice, slice], Tuple[slice, slice]]:
+        """Return (screen_view, world_view) as 2D slices for use with NumPy.
+
+        These views are used to slice their respective arrays.
+        """
+        camera_left, camera_top = self.get_left_top_pos(screen_shape)
+
+        screen_left = max(0, -camera_left)
+        screen_top = max(0, -camera_top)
+
+        world_left = max(0, camera_left)
+        world_top = max(0, camera_top)
+
+        screen_width = min(screen_shape[0] - screen_left, world_shape[0] - world_left)
+        screen_height = min(screen_shape[1] - screen_top, world_shape[1] - world_top)
+
+        screen_view: Tuple[slice, slice] = np.s_[
+            screen_top : screen_top + screen_height,
+            screen_left : screen_left + screen_width,
+        ]
+        world_view: Tuple[slice, slice] = np.s_[
+            world_top : world_top + screen_height,
+            world_left : world_left + screen_width,
+        ]
+
+        return screen_view, world_view
+
+
 class Tile(NamedTuple):
     """A NamedTuple type broadcastable to any tile_dt array."""
 
@@ -61,6 +104,10 @@ class GameMap:
         self.items: Dict[Tuple[int, int], List[Item]] = {}
         self.camera_xy = (0, 0)  # Camera center position.
 
+    @property
+    def camera(self) -> Camera:
+        return Camera(*self.camera_xy)
+
     def is_blocked(self, x: int, y: int) -> bool:
         """Return True if this position is impassible."""
         if not (0 <= x < self.width and 0 <= y < self.height):
@@ -92,44 +139,15 @@ class GameMap:
         )
         self.explored |= self.visible
 
-    def get_camera_pos(self, console: tcod.console.Console) -> Tuple[int, int]:
-        """Get the upper left XY camera position, assuming camera_xy is the center."""
-        cam_x = self.camera_xy[0] - console.width // 2
-        cam_y = self.camera_xy[1] - console.height // 2
-        return cam_x, cam_y
-
-    def get_camera_views(
-        self, console: tcod.console.Console
-    ) -> Tuple[Tuple[slice, slice], Tuple[slice, slice]]:
-        """Return (screen_view, world_view) as 2D slices for use with NumPy."""
-        cam_x, cam_y = self.get_camera_pos(console)
-
-        screen_left = max(0, -cam_x)
-        screen_top = max(0, -cam_y)
-
-        world_left = max(0, cam_x)
-        world_top = max(0, cam_y)
-
-        screen_width = min(console.width - screen_left, self.width - world_left)
-        screen_height = min(console.height - screen_top, self.height - world_top)
-
-        screen_view = np.s_[
-            screen_top : screen_top + screen_height,
-            screen_left : screen_left + screen_width,
-        ]
-        world_view = np.s_[
-            world_top : world_top + screen_height,
-            world_left : world_left + screen_width,
-        ]
-
-        return screen_view, world_view
-
     def render(self, console: tcod.console.Console) -> None:
         """Render this maps contents onto a console."""
-        cam_x, cam_y = self.get_camera_pos(console)
+        screen_shape = console.width, console.height
+        cam_x, cam_y = self.camera.get_left_top_pos(screen_shape)
 
         # Get the screen and world view slices.
-        screen_view, world_view = self.get_camera_views(console)
+        screen_view, world_view = self.camera.get_views(
+            (self.width, self.height), screen_shape
+        )
 
         # Draw the console based on visible or explored areas.
         console.tiles_rgb[screen_view] = np.select(
