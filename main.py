@@ -15,7 +15,7 @@ def main() -> None:
     tileset = tcod.tileset.load_tilesheet(
         "data/cp437-14.png", 32, 8, tcod.tileset.CHARMAP_CP437
     )
-    with tcod.context.new_window(
+    with tcod.context.new(
         width=screen_width,
         height=screen_height,
         tileset=tileset,
