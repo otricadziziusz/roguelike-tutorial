@@ -2,16 +2,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import actions.common
 import effect
 from items import Item
-import actions.common
 
 if TYPE_CHECKING:
-    from actor import Actor
     from actions import ActionWithItem
+    from actor import Actor
+
 
 class Eatable(Item):
-
     def __init__(self, my_effect: effect.Effect):
         super().__init__()
         self.my_effect = my_effect
@@ -34,6 +34,7 @@ class Corpse(Eatable):
     def __init__(self, actor: Actor) -> None:
         super().__init__(effect.Healing(1))
         self.name = f"{actor.fighter.name} Corpse"
+
 
 class FoodRation(Eatable):
     char = ord("%")

@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-from typing import Any, Generic, Optional, TypeVar, TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Any, Generic, Optional, Tuple, TypeVar
 
 import tcod
-import tcod.console
 
-from actions import common
-from states import State, StateBreak, SaveAndQuit, GameOverQuit
 import rendering
+from actions import common
+from states import GameOverQuit, SaveAndQuit, State, StateBreak
 
 if TYPE_CHECKING:
     import actions
-    from model import Model
     from items import Item
+    from model import Model
 
 T = TypeVar("T")
 
@@ -123,7 +122,9 @@ class PickLocation(GameMapState[Tuple[int, int]]):
         super().on_draw(console)
         style: Any = {"fg": (255, 255, 255), "bg": (0, 0, 0)}
         console.print(0, 0, self.desc, **style)
-        cam_x, cam_y = self.model.active_map.get_camera_pos(console)
+        cam_x, cam_y = self.model.active_map.camera.get_left_top_pos(
+            (console.width, console.height)
+        )
         x = self.cursor_xy[0] - cam_x
         y = self.cursor_xy[1] - cam_y
         if 0 <= x < console.width and 0 <= y < console.height:

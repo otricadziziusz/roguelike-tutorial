@@ -3,11 +3,8 @@ from __future__ import annotations
 from typing import Callable, Generic, Optional, TypeVar
 
 import tcod
-import tcod.console
-import tcod.event
 
 import g
-
 
 CONSOLE_MIN_SIZE = (32, 10)  # The smallest acceptable main console size.
 
@@ -21,8 +18,10 @@ class StateBreak(Exception):
 class SaveAndQuit(Exception):
     pass
 
+
 class GameOverQuit(Exception):
     pass
+
 
 class State(Generic[T], tcod.event.EventDispatch[T]):
     MOVE_KEYS = {
